@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+// import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import ChatApp from "@/app/components/ChatApp";
 import { useAuth } from '@/app/context/AuthProvider'

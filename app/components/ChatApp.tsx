@@ -4,7 +4,7 @@ import { Database } from "@/lib/supabase";
 import { TABLE_NAME, addSupabaseData, fetchDatabase } from "@/lib/supabaseFunctions";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import Image from "next/image";
+// import Image from "next/image";
 import { useAuth } from '@/app/context/AuthProvider'
 import { useRouter } from "next/navigation";
 
@@ -64,7 +64,7 @@ const ChatApp = () => {
   const onSubmitNewMessage = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (inputText === "") return;
-    await addSupabaseData({ message: inputText, name: user.email, url: 'https://example.com' });
+    await addSupabaseData({ message: inputText, name: user?.email ?? 'ゲスト', url: 'https://example.com' });
     setInputText("");
   };
 
