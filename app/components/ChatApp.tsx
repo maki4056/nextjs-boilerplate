@@ -4,13 +4,13 @@ import { Database } from "@/lib/supabase";
 import { TABLE_NAME, addSupabaseData, fetchDatabase } from "@/lib/supabaseFunctions";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-// import Image from "next/image";
 import { useAuth } from '@/app/context/AuthProvider'
 import { useRouter } from "next/navigation";
 
 const ChatApp = () => {
   const [inputText, setInputText] = useState(""); // 入力テキスト
   const [messageText, setMessageText] = useState<Database[]>([]); // メッセージ
+  const [errorMessage, setErrorMessage] = useState(""); // エラーメッセージ
   const { user } = useAuth();
   const router = useRouter();
 
@@ -34,7 +34,7 @@ const ChatApp = () => {
           (payload) => {
             console.log("payload: ", payload);
             const { created_at, id, message, url, name } = payload.new;
-            setMessageText((prev) => [{ created_at, id, message, url, name }, ...prev].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+            setMessageText((prev) => [{ created_at, id, message, url, name }, ...prev].slice(0, 10));
           }
         )
         .subscribe();
@@ -52,45 +52,76 @@ const ChatApp = () => {
   useEffect(() => {
     (async () => {
       const allMessage = await fetchDatabase();
-      setMessageText(allMessage as Database[]); // '{ [x: string]: any; }[] | null'
+      setMessageText(allMessage?.slice(0, 10) as Database[]);
     })();
     fetchRealtimeData();
   }, []);
 
   // 入力したメッセージ
-  const onChangeInputText = (event: React.ChangeEvent<HTMLInputElement>) => setInputText(event.target.value);
+  const onChangeInputText = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setInputText(event.target.value);
+    if (event.target.value.length > 50) {
+      setErrorMessage("入力上限を超えています");
+    } else {
+      setErrorMessage("");
+    }
+  };
 
   // メッセージの送信
   const onSubmitNewMessage = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (inputText === "") return;
+    if (inputText.length > 50) {
+      setErrorMessage("入力上限を超えています");
+      return;
+    }
+    if (inputText.trim() === "") return;
+
     await addSupabaseData({ message: inputText, name: user?.email ?? 'ゲスト', url: 'https://example.com' });
     setInputText("");
   };
 
   return (
-    <div>
-      <form onSubmit={onSubmitNewMessage}>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      {/* チャット入力フォーム */}
+      <form onSubmit={onSubmitNewMessage} className="bg-white p-4 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-xl font-bold text-center mb-3">チャットを送信</h2>
         <input
           type="text"
           name="message"
           value={inputText}
           onChange={onChangeInputText}
+          maxLength={50}
           aria-label="新規メッセージを入力"
+          className="w-full p-2 border-2 border-blue-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+          placeholder="メッセージを入力 (50文字以内)"
         />
-        <button type="submit" disabled={inputText === ""}>送信</button>
+        {errorMessage && <p className="text-red-500 text-sm mt-1">{errorMessage}</p>}
+        <button
+          type="submit"
+          disabled={inputText === "" || inputText.length > 50}
+          className={`w-full mt-2 p-2 rounded-lg text-white font-bold transition-all ${
+            inputText === "" || inputText.length > 50
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-500 hover:bg-blue-600"
+          }`}
+        >
+          送信
+        </button>
       </form>
-      <div>
+
+      {/* チャットメッセージ一覧 */}
+      <div className="mt-6 w-full max-w-md bg-white p-4 rounded-lg shadow-lg">
+        <h2 className="text-xl font-bold text-center mb-3">メッセージ一覧</h2>
         {messageText?.length > 0 ? (
           messageText.map((msg) => (
-            <div key={msg.id}>
-              {/* <Image src={msg.avatarUrl} alt={msg.name} width={40} height={40} /> */}
-              <p>{msg.name}: {msg.message}</p>
-              <p>{new Date(msg.created_at).toLocaleString()}</p>
+            <div key={msg.id} className="p-2 border-b border-gray-300">
+              <p className="font-semibold">{msg.name}:</p>
+              <p className="text-gray-700">{msg.message}</p>
+              <p className="text-xs text-gray-500">{new Date(msg.created_at).toLocaleString()}</p>
             </div>
           ))
         ) : (
-          <p>メッセージがありません</p>
+          <p className="text-center text-gray-500">メッセージがありません</p>
         )}
       </div>
     </div>

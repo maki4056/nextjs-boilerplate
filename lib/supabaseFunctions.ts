@@ -6,7 +6,7 @@ export const TABLE_NAME = "chat-app";
 // データの全取得
 export const fetchDatabase = async () => {
   try {
-    const { data } = await supabase.from(TABLE_NAME).select("*").order("created_at", { ascending: false });
+    const { data } = await supabase.from(TABLE_NAME).select("*").order("created_at", { ascending: false }).limit(200);
     return data;
   } catch (error) {
     console.error(error);
