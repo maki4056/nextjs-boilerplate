@@ -10,6 +10,7 @@ export default function AuthPage() {
   const { user, logout } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [account_name, setAccountName] = useState('');
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true); // ログインと新規登録フォームの切り替え
   const router = useRouter();
@@ -19,7 +20,15 @@ export default function AuthPage() {
   // 新規登録処理
   const handleSignUp = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabase.auth.signUp({ 
+      email,
+      password,
+      options: {
+        data: {
+          account_name,
+        },
+      },
+     });
     setLoading(false);
 
     if (error) {
@@ -53,7 +62,7 @@ export default function AuthPage() {
 
       {user ? (
         <div className="w-full flex flex-col items-center">
-          <h1 className="text-3xl font-bold mb-2">ようこそ、{user.email}さん！</h1>
+          <h1 className="text-3xl font-bold mb-2">ようこそ、{user.user_metadata.account_name}さん！</h1>
           <h2 className="mb-4">チャットアプリ</h2>
 
           {/* ChatApp を親のレイアウトに合わせて調整 */}
@@ -103,6 +112,13 @@ export default function AuthPage() {
           ) : (
             <>
               <h1 className="text-2xl font-bold mb-4">新規登録</h1>
+              <input
+                type="text"
+                placeholder="アカウント名"
+                value={account_name}
+                onChange={(e) => setAccountName(e.target.value)}
+                className="w-full border p-2 mb-2 rounded"
+              />
               <input
                 type="email"
                 placeholder="メールアドレス"

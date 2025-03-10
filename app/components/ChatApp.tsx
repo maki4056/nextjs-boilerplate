@@ -76,7 +76,7 @@ const ChatApp = () => {
     }
     if (inputText.trim() === "") return;
 
-    await addSupabaseData({ message: inputText, name: user?.email ?? 'ゲスト', url: 'https://example.com' });
+    await addSupabaseData({ message: inputText, name: user?.user_metadata.account_name ?? 'ゲスト', url: 'https://example.com' });
     setInputText("");
   };
 
