@@ -4,19 +4,24 @@ import { Database } from "@/lib/supabase";
 import { TABLE_NAME, addSupabaseData, fetchDatabase } from "@/lib/supabaseFunctions";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from '@/app/context/AuthProvider'
 import { useRouter } from "next/navigation";
-
-const ChatApp = () => {
+import { Account } from '../model/Accounts';
+import { User } from "next-auth";
+interface ChatAppProps {
+  account: Account; //
+  user: User;
+}
+const ChatApp:React.FC<ChatAppProps> = ({ account, user }) => {
   const [inputText, setInputText] = useState(""); // 入力テキスト
   const [messageText, setMessageText] = useState<Database[]>([]); // メッセージ
   const [errorMessage, setErrorMessage] = useState(""); // エラーメッセージ
-  const { user } = useAuth();
   const router = useRouter();
 
   // ログアウト済みの場合はログインページにリダイレクト
   useEffect(() => {
-    if (!user) router.push("/");
+    if (!user) {
+      router.push("/");
+    } 
   }, [user, router]);
 
   // リアルタイムデータ更新
@@ -76,7 +81,7 @@ const ChatApp = () => {
     }
     if (inputText.trim() === "") return;
 
-    await addSupabaseData({ message: inputText, name: user?.email ?? 'ゲスト', url: 'https://example.com' });
+    await addSupabaseData({ message: inputText, name: account?.account_name ?? 'ゲスト', url: 'https://example.com' });
     setInputText("");
   };
 
