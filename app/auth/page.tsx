@@ -7,6 +7,8 @@ import { getAccountFromSession,saveAccountToSession } from "@/lib/sessionAccount
 import { useAuth } from '@/app/context/AuthProvider'
 import { useRouter } from 'next/navigation';
 import { Account } from '../model/Accounts';
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
 
 export default function AuthPage() {
   const { user, logout } = useAuth();
@@ -65,6 +67,37 @@ export default function AuthPage() {
     }
     alert('ログイン成功！');
   };
+  
+  // Googleログイン後にアカウント名を保存
+  useEffect(() => {
+    const fetchUser = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session?.user) {
+        const user = session.user;
+        const googleName = user.user_metadata.full_name || user.user_metadata.name;
+
+        if (googleName) {
+          await supabase.auth.updateUser({
+            data: { accountName: googleName },
+          });
+        }
+      }
+    };
+
+    // Supabaseの認証状態を監視
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        fetchUser();
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const toggleForm = () => setIsLogin(!isLogin);
 
@@ -102,6 +135,12 @@ export default function AuthPage() {
               <button onClick={handleLogin} className="w-full bg-blue-500 text-white px-4 py-2 rounded" disabled={loading}>
                 {loading ? 'ログイン中...' : 'ログイン'}
               </button>
+              <Auth
+                supabaseClient={supabase}
+                appearance={{ theme: ThemeSupa }}
+                providers={['google']}
+                onlyThirdPartyProviders={true}
+              />
               <p className="mt-4 text-center">
                 新規登録はこちら <button onClick={toggleForm} className="text-blue-500">新規登録</button>
               </p>
@@ -110,9 +149,21 @@ export default function AuthPage() {
             <>
               <h1 className="text-2xl font-bold mb-4">新規登録</h1>
               <input type="text" placeholder="アカウント名" value={account_name} onChange={(e) => setAccountName(e.target.value)} className="w-full border p-2 mb-2 rounded" />
+              <input type="email" placeholder="メールアドレス" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border p-2 mb-2 rounded" />
+              <input type="password" placeholder="パスワード" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border p-2 mb-4 rounded" />
               <button onClick={handleSignUp} className="w-full bg-blue-500 text-white px-4 py-2 rounded" disabled={loading}>
                 {loading ? '登録中...' : '新規登録'}
               </button>
+              <Auth
+                supabaseClient={supabase}
+                appearance={{ theme: ThemeSupa }}
+                providers={['google']}
+                onlyThirdPartyProviders={true}
+              />
+              <p className="mt-4 text-center">
+                 すでにアカウントをお持ちですか？{' '}
+                 <button onClick={toggleForm} className="text-blue-500">ログイン</button>
+              </p>
             </>
           )}
         </div>
