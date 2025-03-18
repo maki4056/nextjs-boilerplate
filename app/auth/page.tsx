@@ -83,14 +83,14 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
+      <button onClick={gotoTop} className="bg-black text-white px-4 py-2 rounded mb-4">
+        TOP
+      </button>
       {/* ログイン情報取得中はローディング表示 */}
       {isFetching ? (
         <div className="text-lg font-bold">読み込み中...</div>
       ) : user ? (
         <div className="w-full flex flex-col items-center">
-        <button onClick={gotoTop} className="bg-black text-white px-4 py-2 rounded mb-4">
-          TOP
-        </button>
           <h1 className="text-3xl font-bold mb-2">
             ようこそ、{account?.account_name ?? "ゲスト"}さん！
           </h1>
