@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import ChatApp from "@/app/components/ChatApp";
 import { fetchAccounts } from "@/lib/accountFunctions";
-import { getAccountFromSession,saveAccountToSession } from "@/lib/sessionAccount";
+// import { getAccountFromSession,saveAccountToSession } from "@/lib/sessionAccount";
 import { useAuth } from '@/app/context/AuthProvider'
 import { useRouter } from 'next/navigation';
 import { Account } from '../model/Accounts';
@@ -18,20 +18,31 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [account, setAccount] = useState<Account | null>(null);
+  const [isFetching, setIsFetching] = useState(true); // 追加: ローディング状態
   const router = useRouter();
 
   const gotoTop = () => router.push('/');
 
   useEffect(() => {
     const fetchAccountData = async () => {
-      const sessionAccount = await getAccountFromSession();
-      if (sessionAccount) {
-        setAccount(sessionAccount);
-      } else {
-        const fetchedAccount = await fetchAccounts(user?.id);
-        setAccount(fetchedAccount);
-        await saveAccountToSession(fetchedAccount);
-      }
+      setIsFetching(true); // ローディング開始
+      
+       // sessionStorage にアカウントデータがある場合は即座にセット
+       const cachedAccount = sessionStorage.getItem("account");
+       if (cachedAccount) {
+         setAccount(JSON.parse(cachedAccount));
+         setIsFetching(false);
+         return;
+       }
+ 
+       // 初回ログイン時のみ Supabase から取得
+       if (user) {
+           const fetchedAccount = await fetchAccounts(user.id);
+           setAccount(fetchedAccount);
+           sessionStorage.setItem("account", JSON.stringify(fetchedAccount)); // キャッシュ
+       }
+ 
+      setIsFetching(false); // ローディング終了
     };
     fetchAccountData();
   }, [user]);
@@ -67,48 +78,19 @@ export default function AuthPage() {
     }
     alert('ログイン成功！');
   };
-  
-  // Googleログイン後にアカウント名を保存
-  useEffect(() => {
-    const fetchUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        const user = session.user;
-        const googleName = user.user_metadata.full_name || user.user_metadata.name;
-
-        if (googleName) {
-          await supabase.auth.updateUser({
-            data: { accountName: googleName },
-          });
-        }
-      }
-    };
-
-    // Supabaseの認証状態を監視
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        fetchUser();
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
 
   const toggleForm = () => setIsLogin(!isLogin);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <button onClick={gotoTop} className="bg-black text-white px-4 py-2 rounded mb-4">
-        TOP
-      </button>
-
-      {user ? (
+      {/* ログイン情報取得中はローディング表示 */}
+      {isFetching ? (
+        <div className="text-lg font-bold">読み込み中...</div>
+      ) : user ? (
         <div className="w-full flex flex-col items-center">
+        <button onClick={gotoTop} className="bg-black text-white px-4 py-2 rounded mb-4">
+          TOP
+        </button>
           <h1 className="text-3xl font-bold mb-2">
             ようこそ、{account?.account_name ?? "ゲスト"}さん！
           </h1>
