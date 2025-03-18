@@ -14,6 +14,7 @@ interface ChatAppProps {
 const ChatApp:React.FC<ChatAppProps> = ({ account, user }) => {
   const [inputText, setInputText] = useState(""); // 入力テキスト
   const [messageText, setMessageText] = useState<Database[]>([]); // メッセージ
+  const [displayCount, setDisplayCount] = useState(10); // 表示件数
   const [errorMessage, setErrorMessage] = useState(""); // エラーメッセージ
   const router = useRouter();
 
@@ -39,7 +40,7 @@ const ChatApp:React.FC<ChatAppProps> = ({ account, user }) => {
           (payload) => {
             console.log("payload: ", payload);
             const { created_at, id, message, url, name } = payload.new;
-            setMessageText((prev) => [{ created_at, id, message, url, name }, ...prev].slice(0, 10));
+            setMessageText((prev) => [{ created_at, id, message, url, name }, ...prev].slice(0, 100));
           }
         )
         .subscribe();
@@ -57,10 +58,15 @@ const ChatApp:React.FC<ChatAppProps> = ({ account, user }) => {
   useEffect(() => {
     (async () => {
       const allMessage = await fetchDatabase();
-      setMessageText(allMessage?.slice(0, 10) as Database[]);
+      setMessageText(allMessage?.slice(0, 100) as Database[]);
     })();
     fetchRealtimeData();
   }, []);
+
+  // さらに読み込む
+  const loadMoreMessages = () => {
+    setDisplayCount((prev) => Math.min(prev + 10, messageText.length));
+  };
 
   // 入力したメッセージ
   const onChangeInputText = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,13 +124,23 @@ const ChatApp:React.FC<ChatAppProps> = ({ account, user }) => {
       <div className="mt-6 w-full max-w-md bg-white p-4 rounded-lg shadow-lg">
         <h2 className="text-xl font-bold text-center mb-3">メッセージ一覧</h2>
         {messageText?.length > 0 ? (
-          messageText.map((msg) => (
+          <>
+          {messageText.slice(0, displayCount).map((msg) => (
             <div key={msg.id} className="p-2 border-b border-gray-300">
               <p className="font-semibold">{msg.name}:</p>
               <p className="text-gray-700">{msg.message}</p>
               <p className="text-xs text-gray-500">{new Date(msg.created_at).toLocaleString()}</p>
             </div>
-          ))
+          ))}
+          {displayCount < messageText.length && (
+            <button
+              onClick={loadMoreMessages}
+              className="mt-4 w-full p-2 text-blue-500 font-bold hover:underline"
+            >
+              さらに読み込む
+            </button>
+          )}
+          </>
         ) : (
           <p className="text-center text-gray-500">メッセージがありません</p>
         )}
