@@ -7,8 +7,10 @@ import { fetchAccounts } from "@/lib/accountFunctions";
 import { useAuth } from '@/app/context/AuthProvider'
 import { useRouter } from 'next/navigation';
 import { Account } from '../model/Accounts';
-import { Auth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { Auth } from '@supabase/auth-ui-react'; //アプリビルド時のみコメントアウト
+import { ThemeSupa } from '@supabase/auth-ui-shared';　//アプリビルド時のみコメントアウト
+// import { PluginListenerHandle } from '@capacitor/core'; //FOR Android
+// import { signInWithGoogle, setupDeepLinkListener } from '@/lib/useAuthRedirect'; //FOR Android
 
 export default function AuthPage() {
   const { user, logout } = useAuth();
@@ -46,6 +48,21 @@ export default function AuthPage() {
     };
     fetchAccountData();
   }, [user]);
+  
+  // Deep Link のリスナー FOR Android
+  // useEffect(() => {
+  //   let handle: PluginListenerHandle | undefined;
+
+  //   const init = async () => {
+  //     handle = await setupDeepLinkListener();
+  //   };
+
+  //   init();
+
+  //   return () => {
+  //     handle?.remove().catch(console.error);
+  //   };
+  // }, []);
 
   const handleSignUp = async () => {
     setLoading(true);
@@ -101,7 +118,10 @@ export default function AuthPage() {
           </div>
 
           <button
-            onClick={logout}
+            onClick={() => {
+              sessionStorage.removeItem("account"); // ログアウト時にキャッシュ削除
+              logout();
+            }}
             className="bg-red-500 text-white px-4 py-2 rounded mt-4"
           >
             ログアウト
@@ -117,12 +137,19 @@ export default function AuthPage() {
               <button onClick={handleLogin} className="w-full bg-blue-500 text-white px-4 py-2 rounded" disabled={loading}>
                 {loading ? 'ログイン中...' : 'ログイン'}
               </button>
+              {/* For Android Start */}
+              {/*<button onClick={signInWithGoogle} className="w-full bg-green-500 text-white px-4 py-2 rounded mt-2">
+                  Google でログイン
+              </button>*/}
+              {/* For Android End */}
+              {/* アプリビルド時のみコメントアウト START*/}
               <Auth
                 supabaseClient={supabase}
                 appearance={{ theme: ThemeSupa }}
                 providers={['google']}
                 onlyThirdPartyProviders={true}
               />
+              {/* アプリビルド時のみコメントアウト　END */}
               <p className="mt-4 text-center">
                 新規登録はこちら <button onClick={toggleForm} className="text-blue-500">新規登録</button>
               </p>
@@ -136,12 +163,19 @@ export default function AuthPage() {
               <button onClick={handleSignUp} className="w-full bg-blue-500 text-white px-4 py-2 rounded" disabled={loading}>
                 {loading ? '登録中...' : '新規登録'}
               </button>
+              {/* For Android Start */}
+              {/* <button onClick={signInWithGoogle} className="w-full bg-green-500 text-white px-4 py-2 rounded mt-2">
+                  Google でログイン
+              </button> */}
+              {/* For Android End */}
+              {/* アプリビルド時のみコメントアウト START*/}
               <Auth
                 supabaseClient={supabase}
                 appearance={{ theme: ThemeSupa }}
                 providers={['google']}
                 onlyThirdPartyProviders={true}
               />
+              {/* アプリビルド時のみコメントアウト　END */}
               <p className="mt-4 text-center">
                  すでにアカウントをお持ちですか？{' '}
                  <button onClick={toggleForm} className="text-blue-500">ログイン</button>
